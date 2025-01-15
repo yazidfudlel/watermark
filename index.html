@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Watermark App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .preview {
+            max-width: 100%;
+            margin: 20px 0;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .controls label {
+            display: block;
+            margin: 10px 0;
+        }
+        input, button {
+            margin: 5px 0;
+            padding: 8px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #imageInput {
+            display: block;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Aplikasi Watermark Image</h1>
+        
+        <div class="controls">
+            <input type="file" id="imageInput" accept="image/*">
+            
+            <label>
+                Teks Watermark:
+                <input type="text" id="watermarkText" value="© My Watermark">
+            </label>
+            
+            <label>
+                Ukuran Teks:
+                <input type="number" id="fontSize" value="30" min="10" max="100">
+            </label>
+            
+            <label>
+                Opacity:
+                <input type="range" id="opacity" min="0" max="1" step="0.1" value="0.5">
+            </label>
+            
+            <label>
+                Posisi:
+                <select id="position">
+                    <option value="center">Tengah</option>
+                    <option value="bottomRight">Kanan Bawah</option>
+                    <option value="bottomLeft">Kiri Bawah</option>
+                    <option value="topRight">Kanan Atas</option>
+                    <option value="topLeft">Kiri Atas</option>
+                </select>
+            </label>
+        </div>
+
+        <button onclick="applyWatermark()">Terapkan Watermark</button>
+        <button onclick="downloadImage()" id="downloadBtn" disabled>Download</button>
+
+        <canvas id="canvas" class="preview"></canvas>
+    </div>
+
+    <script>
+        let originalImage = null;
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    originalImage = new Image();
+                    originalImage.onload = function() {
+                        canvas.width = originalImage.width;
+                        canvas.height = originalImage.height;
+                        applyWatermark();
+                    };
+                    originalImage.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function applyWatermark() {
+            if (!originalImage) return;
+
+            // Reset canvas
+            canvas.width = originalImage.width;
+            canvas.height = originalImage.height;
+            ctx.drawImage(originalImage, 0, 0);
+
+            // Get watermark settings
+            const text = document.getElementById('watermarkText').value;
+            const fontSize = document.getElementById('fontSize').value;
+            const opacity = document.getElementById('opacity').value;
+            const position = document.getElementById('position').value;
+
+            // Set watermark style
+            ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            ctx.font = `${fontSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Calculate position
+            let x, y;
+            const padding = 20;
+            const textWidth = ctx.measureText(text).width;
+
+            switch(position) {
+                case 'center':
+                    x = canvas.width / 2;
+                    y = canvas.height / 2;
+                    break;
+                case 'bottomRight':
+                    x = canvas.width - (textWidth / 2) - padding;
+                    y = canvas.height - padding;
+                    break;
+                case 'bottomLeft':
+                    x = (textWidth / 2) + padding;
+                    y = canvas.height - padding;
+                    break;
+                case 'topRight':
+                    x = canvas.width - (textWidth / 2) - padding;
+                    y = padding + fontSize / 2;
+                    break;
+                case 'topLeft':
+                    x = (textWidth / 2) + padding;
+                    y = padding + fontSize / 2;
+                    break;
+            }
+
+            // Draw watermark
+            ctx.fillText(text, x, y);
+            
+            // Enable download button
+            document.getElementById('downloadBtn').disabled = false;
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'watermarked-image.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>
